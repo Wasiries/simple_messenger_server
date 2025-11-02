@@ -1,10 +1,9 @@
 use std::net::{*};
-use std::thread::Thread;
+use std::sync::*;
 
 pub struct User {
     name: String,
     ip: String,
-    listener: TcpListener,
 }
 
 impl User {
@@ -23,31 +22,48 @@ impl User {
     pub fn new() -> Self {
         let name = User::enter_name();
         let ip = User::enter_ip();
-        let listener = TcpListener::bind(&ip[..]).unwrap();
         return User {
             name,
             ip,
-            listener,
         };
     }
-    pub fn handle_server(&self, stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
+    fn user_enter(&self, sender: mpsc::Sender<String>) -> Result<(), Box<dyn std::error::Error>> {
+        let mut value = String::new();
+        loop {
+            std::io::stdin().read_line(&mut value)?;
+            value = value.trim().parse()?;
+            if value == String::from("$exit$") {
+                break;
+            } else {
+                sender.send(value.clone())?;
+                value = String::new();
+            }
+        }
 
         return Ok(());
     }
-    pub fn start_seerver(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let closure = || {
-            for stream in self.listener.incoming() {
-                match stream {
-                    Ok(stream) => {
-                        let _ = self.handle_server(stream);
-                    },
-                    Err(_) => {
-                        println!("Connection error");
-                    }
+    fn server_handle(&self, stream: TcpStream, receiver: mpsc::Receiver<String>, sender: mpsc::Sender<String>) -> Result<(), Box<dyn std::error::Error>> {
+        
+        return Ok(());
+    }
+    pub fn start_server(&'static self) -> Result<(), Box<dyn std::error::Error>> {
+        let listener = TcpListener::bind(&self.ip.clone()[..])?;
+        let (sender, receiver) = mpsc::channel();
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => {
+                    let server_closure = move || {
+                        let _ = self.server_handle(stream, receiver, sender);
+                    };
+                    let handle = std::thread::spawn(server_closure);
+                    let _ = handle.join();
+                    break;
+                },
+                Err(e) => {
+                    return Err(Box::new(e));
                 }
             }
-        };
-        // let proc = std::thread::spawn(closure);
+        }
         return Ok(());
     }
 }
