@@ -1,7 +1,4 @@
-use std::net::{*};
-use std::sync::*;
-
-pub static mut ip: String = String::new();
+pub static mut IP: String = String::new();
 
 use std::net::{TcpListener, TcpStream};
 use std::thread;
@@ -26,13 +23,13 @@ fn handle_client(mut stream: TcpStream) -> Result<(), Error> {
 
 pub fn initialize(ip_: String) {
     unsafe {
-        ip = ip_;
+        IP = ip_;
     }
 }
 
 pub fn begining() {
     unsafe {
-        let listener = TcpListener::bind(&ip[..]).expect("Could not bind");
+        let listener = TcpListener::bind(&IP[..]).expect("Could not bind");
         for stream in listener.incoming() {
             match stream {
                 Err(e) => { eprintln!("failed: {}", e) }
