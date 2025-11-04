@@ -1,69 +1,47 @@
 use std::net::{*};
 use std::sync::*;
 
-pub struct User {
-    name: String,
-    ip: String,
+pub static mut ip: String = String::new();
+
+use std::net::{TcpListener, TcpStream};
+use std::thread;
+use std::io::{Read, Write, Error};
+
+pub fn enter() -> String {
+    let mut value = String::new();
+    std::io::stdin().read_line(&mut value).unwrap();
+    let value: String = value.trim().parse().unwrap();
+    return value;
 }
 
-impl User {
-    fn enter_name() -> String {
-        let mut value = String::new();
-        std::io::stdin().read_line(&mut value).unwrap();
-        let value: String = value.trim().parse().unwrap();
-        return value;
+fn handle_client(mut stream: TcpStream) -> Result<(), Error> {
+    println!("Incoming connection from: {}", stream.peer_addr()?);
+    let mut buf = [0; 1024];
+    loop {
+        let bytes_read = stream.read(&mut buf)?;
+        if bytes_read == 0 { return Ok(()) }
+        stream.write(&buf[..bytes_read])?;
     }
-    fn enter_ip() -> String {
-        let mut value = String::new();
-        std::io::stdin().read_line(&mut value).unwrap();
-        let value: String = value.trim().parse().unwrap();
-        return value;
-    }
-    pub fn new() -> Self {
-        let name = User::enter_name();
-        let ip = User::enter_ip();
-        return User {
-            name,
-            ip,
-        };
-    }
-    fn user_enter(&self, sender: mpsc::Sender<String>) -> Result<(), Box<dyn std::error::Error>> {
-        let mut value = String::new();
-        loop {
-            std::io::stdin().read_line(&mut value)?;
-            value = value.trim().parse()?;
-            if value == String::from("$exit$") {
-                break;
-            } else {
-                sender.send(value.clone())?;
-                value = String::new();
-            }
-        }
+}
 
-        return Ok(());
+pub fn initialize(ip_: String) {
+    unsafe {
+        ip = ip_;
     }
-    fn server_handle(&self, stream: TcpStream, receiver: mpsc::Receiver<String>, sender: mpsc::Sender<String>) -> Result<(), Box<dyn std::error::Error>> {
-        
-        return Ok(());
-    }
-    pub fn start_server(&'static self) -> Result<(), Box<dyn std::error::Error>> {
-        let listener = TcpListener::bind(&self.ip.clone()[..])?;
-        let (sender, receiver) = mpsc::channel();
+}
+
+pub fn begining() {
+    unsafe {
+        let listener = TcpListener::bind(&ip[..]).expect("Could not bind");
         for stream in listener.incoming() {
             match stream {
+                Err(e) => { eprintln!("failed: {}", e) }
                 Ok(stream) => {
-                    let server_closure = move || {
-                        let _ = self.server_handle(stream, receiver, sender);
-                    };
-                    let handle = std::thread::spawn(server_closure);
-                    let _ = handle.join();
-                    break;
-                },
-                Err(e) => {
-                    return Err(Box::new(e));
+                    thread::spawn(move || {
+                        handle_client(stream).unwrap_or_else(|error| eprintln!("{:?}", error));
+                    });
                 }
             }
         }
-        return Ok(());
     }
 }
