@@ -1,4 +1,4 @@
-pub static mut IP: String = String::new();
+static mut IP: String = String::new();
 
 use std::net::{TcpListener, TcpStream};
 use std::thread;
