@@ -125,7 +125,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                
+                println!("Connection was set");
                 let (sender, receiver) = mpsc::channel();
                 let (sinterr, rinterr) = mpsc::channel();
                 let (sinterw, rinterw) = mpsc::channel();
@@ -134,7 +134,7 @@ fn main() {
                     reading(stream_clone.unwrap(), rinterr, alpha, p1 * p2);
                 };
                 let write = move || {
-                    writing(stream, receiver, rinterw);
+                    writing(stream, receiver, rinterw, b, rb);
                 };
                 let read_handle = thread::spawn(read);
                 let write_handle = thread::spawn(write);
@@ -204,14 +204,14 @@ fn reading(mut stream: TcpStream, interruption: mpsc::Receiver<bool>, alpha: u64
     }
 }
 
-fn writing(mut stream: TcpStream, receiver: mpsc::Receiver<String>, interruption: mpsc::Receiver<bool>) {
+fn writing(mut stream: TcpStream, receiver: mpsc::Receiver<String>, interruption: mpsc::Receiver<bool>, b: u64, rb: u64) {
     for message in receiver {
         if let Ok(value) = interruption.try_recv() {
             if value == true {
                 break;
             }
         }
-        if let Err(error) = stream.write(message.as_bytes()) {
+        if let Err(error) = stream.write(&encryption(message.as_bytes(), b, rb)) {
             println!("Failed to send message due to: {}", error.kind());
             break;
         }
