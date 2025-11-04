@@ -98,27 +98,7 @@ fn main() {
     let mut ip = String::new();
     io::stdin().read_line(&mut ip).unwrap();
     ip = ip.trim().parse().unwrap();
-    let mut p1 = String::new();
-    io::stdin().read_line(&mut p1).unwrap();
-    let p1: u64 = p1.trim().parse().unwrap();
-    let mut p2 = String::new();
-    io::stdin().read_line(&mut p2).unwrap();
-    let p2: u64 = p2.trim().parse().unwrap();
-    println!("ra = {}", p1 * p2);
-    let mut a = String::new();
-    io::stdin().read_line(&mut a).unwrap();
-    let a: u64 = a.trim().parse().unwrap();
-    println!("a = {}", a);
-    let alpha = alpha_finder(a, euler(p1, p2));
-    println!("alpha = {}", alpha);
-    let mut b = String::new();
-    io::stdin().read_line(&mut b).unwrap();
-    let b: u64 = b.trim().parse().unwrap();
-    println!("b = {}", b);
-    let mut rb = String::new();
-    io::stdin().read_line(&mut rb).unwrap();
-    let rb: u64 = rb.trim().parse().unwrap();
-    println!("rb = {}", rb);
+
 
     let listener = TcpListener::bind(&ip[..]).unwrap();
 
@@ -126,6 +106,27 @@ fn main() {
         match stream {
             Ok(stream) => {
                 println!("Connection was set");
+                let mut p1 = String::new();
+                io::stdin().read_line(&mut p1).unwrap();
+                let p1: u64 = p1.trim().parse().unwrap();
+                let mut p2 = String::new();
+                io::stdin().read_line(&mut p2).unwrap();
+                let p2: u64 = p2.trim().parse().unwrap();
+                println!("ra = {}", p1 * p2);
+                let mut a = String::new();
+                io::stdin().read_line(&mut a).unwrap();
+                let a: u64 = a.trim().parse().unwrap();
+                println!("a = {}", a);
+                let alpha = alpha_finder(a, euler(p1, p2));
+                println!("alpha = {}", alpha);
+                let mut b = String::new();
+                io::stdin().read_line(&mut b).unwrap();
+                let b: u64 = b.trim().parse().unwrap();
+                println!("b = {}", b);
+                let mut rb = String::new();
+                io::stdin().read_line(&mut rb).unwrap();
+                let rb: u64 = rb.trim().parse().unwrap();
+                println!("rb = {}", rb);
                 let (sender, receiver) = mpsc::channel();
                 let (sinterr, rinterr) = mpsc::channel();
                 let (sinterw, rinterw) = mpsc::channel();
