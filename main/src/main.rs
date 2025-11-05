@@ -6,37 +6,57 @@ use std::{
     sync::mpsc,
 };
 
-fn downsize(vector: Vec<u8>) -> Vec<u64> {
-    let mut temp = vec![0u64; vector.len() / 8];
-    for i in 0..(vector.len() / 8) {
-        for j in (0..8).rev() {
-            temp[i] *= 256;
-            temp[i] += vector[i * 8 + j] as u64;
+fn downsize(vector: &[u8]) -> Vec<u64> {
+    let chunks = vector.chunks(8);
+    let mut result = Vec::new();
+    
+    for chunk in chunks {
+        let mut value = 0u64;
+        for &byte in chunk {
+            value = (value << 8) | byte as u64;
         }
+        if chunk.len() < 8 {
+            value <<= 8 * (8 - chunk.len());
+        }
+        result.push(value);
     }
-    return temp;
+    
+    return result;
 }
 
-fn extend(vector: Vec<u64>) -> Vec<u8> {
-    let mut v = vector;
-    let mut temp = vec![0u8; v.len() * 8];
-    for i in 0..v.len() {
-        for j in 0..8 {
-            temp[i * 8 + j] = (v[i] % 256) as u8;
-            v[i] /= 256;
+fn extend(vector: &[u64]) -> Vec<u8> {
+    let mut result = Vec::new();
+    
+    for &value in vector {
+        let mut temp = value;
+        let mut bytes = Vec::new();
+        
+        for _ in 0..8 {
+            bytes.push((temp & 0xFF) as u8);
+            temp >>= 8;
         }
+        result.extend(bytes.into_iter().rev());
     }
-
-    return temp;
+    
+    result
 }
 
-fn powmod(n: u64, k: u64, m: u64) -> u64 {
-    let mut ans = 1u64;
-    for _ in 0..k {
-        ans *= n;
-        ans = ans % m;
+fn powmod(base: u64, exp: u64, modulus: u64) -> u64 {
+    if modulus == 1 {
+        return 0;
     }
-    return ans;
+    let mut result = 1;
+    let mut base = base % modulus;
+    let mut exp = exp;
+    
+    while exp > 0 {
+        if exp % 2 == 1 {
+            result = (result as u128 * base as u128 % modulus as u128) as u64;
+        }
+        exp >>= 1;
+        base = (base as u128 * base as u128 % modulus as u128) as u64;
+    }
+    return result;
 }
 
 #[allow(dead_code)]
@@ -46,12 +66,12 @@ fn encryption(value: &[u8], b: u64, rb: u64) -> Vec<u8> {
         temp[i] = value[i] as u64;
         temp[i] = powmod(temp[i], b, rb);
     }
-    let ans = extend(temp);
+    let ans = extend(&temp[..]);
     return ans;
 }
 #[allow(dead_code)]
 fn decryption(value: &[u8], alpha: u64, ra: u64) -> Vec<u8> {
-    let temp = downsize(Vec::from(value));
+    let temp = downsize(&Vec::from(value)[..]);
     let mut ans = vec![0u8; temp.len()];
     for i in 0..temp.len() {
         ans[i] = powmod(temp[i], alpha, ra) as u8;
@@ -60,7 +80,7 @@ fn decryption(value: &[u8], alpha: u64, ra: u64) -> Vec<u8> {
 }
 
 fn without_decryption(value: &[u8]) -> Vec<u8> {
-    let temp = downsize(Vec::from(value));
+    let temp = downsize(&Vec::from(value)[..]);
     let mut ans = vec![0u8; temp.len()];
     for i in 0..temp.len() {
         ans[i] = (temp[i] % 256) as u8;
@@ -181,7 +201,7 @@ fn main() {
 }
 
 fn reading(mut stream: TcpStream, interruption: mpsc::Receiver<bool>, alpha: u64, ra: u64) {
-    let mut buffer = [0; 2048];
+    let mut buffer = [0; 4096];
     loop {
         if let Ok(value) = interruption.try_recv() {
             if value == true {
