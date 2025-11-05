@@ -17,12 +17,13 @@ fn downsize(vector: Vec<u8>) -> Vec<u64> {
     return temp;
 }
 
-fn extend(mut vector: Vec<u64>) -> Vec<u8> {
-    let mut temp = vec![0u8; vector.len() * 8];
-    for i in 0..vector.len() {
+fn extend(vector: Vec<u64>) -> Vec<u8> {
+    let mut v = vector;
+    let mut temp = vec![0u8; v.len() * 8];
+    for i in 0..v.len() {
         for j in 0..8 {
-            temp[i * 8 + j] = (vector[i] % 256) as u8;
-            vector[i] /= 256;
+            temp[i * 8 + j] = (v[i] % 256) as u8;
+            v[i] /= 256;
         }
     }
 
@@ -62,7 +63,7 @@ fn without_decryption(value: &[u8]) -> Vec<u8> {
     let temp = downsize(Vec::from(value));
     let mut ans = vec![0u8; temp.len()];
     for i in 0..temp.len() {
-        ans[i] = temp[i] as u8;
+        ans[i] = (temp[i] % 256) as u8;
     }
     return ans;
 }
